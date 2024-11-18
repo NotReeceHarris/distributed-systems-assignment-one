@@ -27,11 +27,14 @@ class App(customtkinter.CTk):
         self.logo_label = customtkinter.CTkLabel(self.sidebar_frame, text="D&D", font=customtkinter.CTkFont(size=20, weight="bold"))
         self.logo_label.grid(row=0, column=0, padx=20, pady=(20, 10))
         
-        self.sidebar_button_1 = customtkinter.CTkButton(self.sidebar_frame, text="Create", command=self.sidebar_button_event)
+        self.sidebar_button_1 = customtkinter.CTkButton(self.sidebar_frame, text="Create", command=self.sidebar_button_create)
         self.sidebar_button_1.grid(row=1, column=0, padx=20, pady=10)
         
-        self.sidebar_button_2 = customtkinter.CTkButton(self.sidebar_frame, text="View", command=self.sidebar_button_event)
+        self.sidebar_button_2 = customtkinter.CTkButton(self.sidebar_frame, text="View", command=self.sidebar_button_view)
         self.sidebar_button_2.grid(row=2, column=0, padx=20, pady=10)
+
+        self.sidebar_button_3 = customtkinter.CTkButton(self.sidebar_frame, text="Save", command=self.sidebar_button_save)
+        self.sidebar_button_3.grid(row=3, column=0, padx=20, pady=10)
         
         # Theme Selector
         self.appearance_mode_label = customtkinter.CTkLabel(self.sidebar_frame, text="Appearance Mode:", anchor="w")
@@ -39,6 +42,8 @@ class App(customtkinter.CTk):
         self.appearance_mode_optionemenu = customtkinter.CTkOptionMenu(self.sidebar_frame, values=["Light", "Dark", "System"],
                                                         command=self.change_appearance_mode_event)
         self.appearance_mode_optionemenu.grid(row=6, column=0, padx=20, pady=(5, 20))
+
+
 
         # create canvas for background image with scrollbars
         self.canvas_frame = customtkinter.CTkFrame(self)
@@ -296,23 +301,121 @@ class App(customtkinter.CTk):
 
         # =================================
 
-
         # set default values
         self.appearance_mode_optionemenu.set("Light")
 
-    def open_input_dialog_event(self):
-        dialog = customtkinter.CTkInputDialog(text="Type in a number:", title="CTkInputDialog")
-        print("CTkInputDialog:", dialog.get_input())
+
 
     def change_appearance_mode_event(self, new_appearance_mode: str):
         customtkinter.set_appearance_mode(new_appearance_mode)
 
-    def change_scaling_event(self, new_scaling: str):
-        new_scaling_float = int(new_scaling.replace("%", "")) / 100
-        customtkinter.set_widget_scaling(new_scaling_float)
 
-    def sidebar_button_event(self):
+    def sidebar_button_create(self):
         print("sidebar_button click")
+
+    def sidebar_button_view(self):
+        print("sidebar_button click")
+
+    def sidebar_button_save(self):
+
+        character = {
+            "character_name": self.character_name.get(),
+            "class_n_level": self.class_n_level.get(),
+            "background": self.background.get(),
+            "player_name": self.player_name.get(),
+            "race": self.race.get(),
+            "alignment": self.alignment.get(),
+            "xp": self.xp.get(),
+
+            "strength": self.strength.get(),
+            "strength_bonus": self.strength_bonus.get(),
+
+            "dexterity": self.dexterity.get(),
+            "dexterity_bonus": self.dexterity_bonus.get(),
+
+            "constitution": self.constitution.get(),
+            "constitution_bonus": self.constitution_bonus.get(),
+
+            "intelligence": self.intelligence.get(),
+            "intelligence_bonus": self.intelligence_bonus.get(),
+
+            "wisdom": self.wisdom.get(),
+            "wisdom_bonus": self.wisdom_bonus.get(),
+
+            "charisma": self.charisma.get(),
+            "charisma_bonus": self.charisma_bonus.get(),
+
+            "passive_wisdom": self.passive_wisdom.get(),
+            "proficiencies_languages": self.proficiencies_languages.get("1.0",'end-1c'),
+
+            "inspiration": self.inspiration.get(),
+            "proficiency_bonus": self.proficiency_bonus.get(),
+
+            "armor_class": self.armor_class.get(),
+            "initiative": self.initiative.get(),
+            "speed": self.speed.get(),
+
+            "personality_traits": self.personality_traits.get("1.0",'end-1c'),
+            "ideals": self.ideals.get("1.0",'end-1c'),
+            "bonds": self.bonds.get("1.0",'end-1c'),
+            "flaws": self.flaws.get("1.0",'end-1c'),
+
+            "features_traits": self.features_traits.get("1.0",'end-1c'),
+
+            "hit_points": {
+                "current": self.current_hit_points.get("1.0",'end-1c'),
+                "max": self.max_hit_points.get()
+            },
+
+            "dice": {
+                "hit_dice": self.hit_dice.get("1.0",'end-1c'),
+                "hit_dice_total": self.hit_dice_total.get()
+            },
+
+            "death_saves": {
+                "success": {
+                    "one": self.death_saves_success_one.get(),
+                    "two": self.death_saves_success_two.get(),
+                    "three": self.death_saves_success_three.get()
+                },
+                "fail": {
+                    "one": self.death_saves_fail_one.get(),
+                    "two": self.death_saves_fail_two.get(),
+                    "three": self.death_saves_fail_three.get()
+                }
+            },
+
+            "attacks_spellcasting": self.attacks_spellcasting.get("1.0",'end-1c'),
+            "attacks": {
+                "one": {
+                    "name": self.attack_one_name.get(),
+                    "atk_bonus": self.attack_one_atk_bonus.get(),
+                    "type": self.attack_one_type.get()
+                },
+                "two": {
+                    "name": self.attack_two_name.get(),
+                    "atk_bonus": self.attack_two_atk_bonus.get(),
+                    "type": self.attack_two_type.get()
+                },
+                "three": {
+                    "name": self.attack_three_name.get(),
+                    "atk_bonus": self.attack_three_atk_bonus.get(),
+                    "type": self.attack_three_type.get()
+                }
+            },
+
+            "equipment": {
+                "equipment": self.equipment.get("1.0",'end-1c'),
+                "cp": self.equipment_cp.get(),
+                "sp": self.equipment_sp.get(),
+                "ep": self.equipment_ep.get(),
+                "gp": self.equipment_gp.get(),
+                "pp": self.equipment_pp.get()
+            },
+        }
+
+        print(character)
+    
 
 
 if __name__ == "__main__":
