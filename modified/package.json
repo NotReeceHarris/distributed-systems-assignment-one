@@ -1,8 +1,10 @@
 {
   "scripts": {
-    "dev": "nodemon --exec python client.py"
+    "dev:client": "nodemon --exec python client.py --ignore saves/",
+    "dev:server": "nodemon --exec python server.py --ignore saves/"
   },
   "dependencies": {
+    "concurrently": "^9.1.0",
     "nodemon": "^3.1.7"
   }
 }

@@ -1,0 +1,80 @@
+{
+    "character_name": "1",
+    "class_n_level": "2",
+    "background": "3",
+    "player_name": "4",
+    "race": "5",
+    "alignment": "6",
+    "xp": "7",
+    "strength": "8",
+    "strength_bonus": "14",
+    "dexterity": "18",
+    "dexterity_bonus": "20",
+    "constitution": "23",
+    "constitution_bonus": "26",
+    "intelligence": "28",
+    "intelligence_bonus": "33",
+    "wisdom": "40",
+    "wisdom_bonus": "42",
+    "charisma": "43",
+    "charisma_bonus": "44",
+    "passive_wisdom": "45",
+    "proficiencies_languages": "52",
+    "inspiration": "9",
+    "proficiency_bonus": "15",
+    "damage_from_last_encounter": 1,
+    "armor_class": "10",
+    "initiative": "11",
+    "speed": "12",
+    "personality_traits": "13",
+    "ideals": "17",
+    "bonds": "22",
+    "flaws": "25",
+    "features_traits": "32",
+    "hit_points": {
+        "current": "19",
+        "max": "16"
+    },
+    "dice": {
+        "hit_dice": "27",
+        "hit_dice_total": "24"
+    },
+    "death_saves": {
+        "success": {
+            "one": 1,
+            "two": 1,
+            "three": 1
+        },
+        "fail": {
+            "one": 1,
+            "two": 0,
+            "three": 1
+        }
+    },
+    "attacks_spellcasting": "41",
+    "attacks": {
+        "one": {
+            "name": "29",
+            "atk_bonus": "30",
+            "type": "31"
+        },
+        "two": {
+            "name": "34",
+            "atk_bonus": "35",
+            "type": "36"
+        },
+        "three": {
+            "name": "37",
+            "atk_bonus": "38",
+            "type": "39"
+        }
+    },
+    "equipment": {
+        "equipment": "47",
+        "cp": "46",
+        "sp": "48",
+        "ep": "49",
+        "gp": "50",
+        "pp": "51"
+    }
+}

@@ -1,7 +1,11 @@
+import socket, json
+
+host = '127.0.0.1' # this is the server IP
+port = 5000 # this is the port on the server
+
 import tkinter
 import tkinter.messagebox
 import customtkinter
-
 customtkinter.set_appearance_mode("Light")  # Modes: "System" (standard), "Dark", "Light"
 customtkinter.set_default_color_theme("blue")  # Themes: "blue" (standard), "green", "dark-blue"
 
@@ -9,6 +13,9 @@ customtkinter.set_default_color_theme("blue")  # Themes: "blue" (standard), "gre
 class App(customtkinter.CTk):
     def __init__(self):
         super().__init__()
+
+        self.socc = socket.socket() # create a new socket
+        self.socc.connect((host, port)) # create a socket with the server details
 
         # configure window
         self.title("Northwest D&D Guild and Traders association")
@@ -30,29 +37,24 @@ class App(customtkinter.CTk):
         self.sidebar_button_1 = customtkinter.CTkButton(self.sidebar_frame, text="Create", command=self.sidebar_button_create)
         self.sidebar_button_1.grid(row=1, column=0, padx=20, pady=10)
         
-        self.sidebar_button_2 = customtkinter.CTkButton(self.sidebar_frame, text="View", command=self.sidebar_button_view)
+        self.sidebar_button_2 = customtkinter.CTkButton(self.sidebar_frame, text="Search & Load", command=self.sidebar_button_view)
         self.sidebar_button_2.grid(row=2, column=0, padx=20, pady=10)
+
+        self.spawn_create_widget()
+
+    def spawn_create_widget(self):
 
         self.sidebar_button_3 = customtkinter.CTkButton(self.sidebar_frame, text="Save", command=self.sidebar_button_save)
         self.sidebar_button_3.grid(row=3, column=0, padx=20, pady=10)
-        
-        # Theme Selector
-        self.appearance_mode_label = customtkinter.CTkLabel(self.sidebar_frame, text="Appearance Mode:", anchor="w")
-        self.appearance_mode_label.grid(row=5, column=0, padx=20, pady=(0, 0))
-        self.appearance_mode_optionemenu = customtkinter.CTkOptionMenu(self.sidebar_frame, values=["Light", "Dark", "System"],
-                                                        command=self.change_appearance_mode_event)
-        self.appearance_mode_optionemenu.grid(row=6, column=0, padx=20, pady=(5, 20))
-
-
 
         # create canvas for background image with scrollbars
-        self.canvas_frame = customtkinter.CTkFrame(self)
-        self.canvas_frame.grid(row=0, column=1, rowspan=4, sticky="nsew")
+        self.canvas_create_frame = customtkinter.CTkFrame(self)
+        self.canvas_create_frame.grid(row=0, column=1, rowspan=4, sticky="nsew")
 
-        self.canvas = tkinter.Canvas(self.canvas_frame, width=960, height=580)
+        self.canvas = tkinter.Canvas(self.canvas_create_frame, width=960, height=580)
         self.canvas.pack(side=tkinter.LEFT, fill=tkinter.BOTH, expand=True)
 
-        self.scrollbar_y = tkinter.Scrollbar(self.canvas_frame, orient=tkinter.VERTICAL, command=self.canvas.yview)
+        self.scrollbar_y = tkinter.Scrollbar(self.canvas_create_frame, orient=tkinter.VERTICAL, command=self.canvas.yview)
         self.scrollbar_y.pack(side=tkinter.RIGHT, fill=tkinter.Y)
 
         self.canvas.configure(yscrollcommand=self.scrollbar_y.set)
@@ -66,6 +68,10 @@ class App(customtkinter.CTk):
 
 
         # =================================
+
+        # Damage from last encounter
+        self.damage_from_last_encounter = customtkinter.CTkCheckBox(self)
+        self.canvas.create_window(219, 430, height=30, width=30, window=self.damage_from_last_encounter)
 
         # Character Name
         self.character_name = customtkinter.CTkEntry(self)
@@ -299,22 +305,131 @@ class App(customtkinter.CTk):
         self.death_saves_fail_three = customtkinter.CTkCheckBox(self)
         self.canvas.create_window(760, 685, width=30, window=self.death_saves_fail_three)
 
-        # =================================
+    def spawn_list_widget(self):
+        # create canvas for background image with scrollbars
+        self.canvas_list_frame = customtkinter.CTkFrame(self)
+        self.canvas_list_frame.grid(row=0, column=1, rowspan=4, sticky="nsew")
 
-        # set default values
-        self.appearance_mode_optionemenu.set("Light")
+        self.canvas = tkinter.Canvas(self.canvas_list_frame, width=960, height=580)
+        self.canvas.pack(side=tkinter.LEFT, fill=tkinter.BOTH, expand=True)
+
+        self.scrollbar_y = tkinter.Scrollbar(self.canvas_list_frame, orient=tkinter.VERTICAL, command=self.canvas.yview)
+        self.scrollbar_y.pack(side=tkinter.RIGHT, fill=tkinter.Y)
+
+        self.canvas.configure(yscrollcommand=self.scrollbar_y.set)
+
+        self.dynamic_buttons = {}
+
+        for i, character in enumerate(self.characters_list):
+            slug = character['slug']
+            label_text = f"{character['name']} {'' if not character['class_n_level'] else 'a'} {character['class_n_level']}"
+            self.dynamic_buttons[slug] = customtkinter.CTkButton(self.canvas_list_frame, text="view", command=lambda slug=slug: self.load_character(slug))
+            self.canvas.create_window(100, 100 + i * 50, height=30, width=100, window=self.dynamic_buttons[slug])
+            self.canvas.create_text(170, 100 + i * 50, text=label_text, font=customtkinter.CTkFont(size=20), anchor="w")
 
 
+    def load_character(self, slug):
+        print('requesting character:', slug)
 
-    def change_appearance_mode_event(self, new_appearance_mode: str):
-        customtkinter.set_appearance_mode(new_appearance_mode)
+        data_to_send = json.dumps({
+            "event": "get",
+            "slug": slug
+        })
 
+        self.socc.send(data_to_send.encode('utf-8'))
+        data = self.socc.recv(4096).decode('utf-8')
+
+        character = json.loads(data)
+
+        self.canvas_list_frame.destroy()
+        self.spawn_create_widget()
+
+        if character['damage_from_last_encounter'] == 1:
+            self.damage_from_last_encounter.select()
+
+        self.character_name.insert(0, character['character_name'])
+        self.class_n_level.insert(0, character['class_n_level'])
+        self.background.insert(0, character['background'])
+        self.player_name.insert(0, character['player_name'])
+        self.race.insert(0, character['race'])
+        self.alignment.insert(0, character['alignment'])
+        self.xp.insert(0, character['xp'])
+        self.strength.insert(0, character['strength'])
+        self.strength_bonus.insert(0, character['strength_bonus'])
+        self.dexterity.insert(0, character['dexterity'])
+        self.dexterity_bonus.insert(0, character['dexterity_bonus'])
+        self.constitution.insert(0, character['constitution'])
+        self.constitution_bonus.insert(0, character['constitution_bonus'])
+        self.intelligence.insert(0, character['intelligence'])
+        self.intelligence_bonus.insert(0, character['intelligence_bonus'])
+        self.wisdom.insert(0, character['wisdom'])
+        self.wisdom_bonus.insert(0, character['wisdom_bonus'])
+        self.charisma.insert(0, character['charisma'])
+        self.charisma_bonus.insert(0, character['charisma_bonus'])
+        self.passive_wisdom.insert(0, character['passive_wisdom'])
+        self.proficiencies_languages.insert(1.0, character['proficiencies_languages'])
+        self.inspiration.insert(0, character['inspiration'])
+        self.proficiency_bonus.insert(0, character['proficiency_bonus'])
+        self.armor_class.insert(0, character['armor_class'])
+        self.initiative.insert(0, character['initiative'])
+        self.speed.insert(0, character['speed'])
+        self.personality_traits.insert(1.0, character['personality_traits'])
+        self.ideals.insert(1.0, character['ideals'])
+        self.bonds.insert(1.0, character['bonds'])
+        self.flaws.insert(1.0, character['flaws'])
+        self.features_traits.insert(1.0, character['features_traits'])
+        self.current_hit_points.insert(1.0, character['hit_points']['current'])
+        self.max_hit_points.insert(0, character['hit_points']['max'])
+        self.hit_dice.insert(1.0, character['dice']['hit_dice'])
+        self.hit_dice_total.insert(0, character['dice']['hit_dice_total'])
+        if character['death_saves']['success']['one'] == 1:
+            self.death_saves_success_one.select()
+        if character['death_saves']['success']['two'] == 1:
+            self.death_saves_success_two.select()
+        if character['death_saves']['success']['three'] == 1:
+            self.death_saves_success_three.select()
+        if character['death_saves']['fail']['one'] == 1:
+            self.death_saves_fail_one.select()
+        if character['death_saves']['fail']['two'] == 1:
+            self.death_saves_fail_two.select()
+        if character['death_saves']['fail']['three'] == 1:
+            self.death_saves_fail_three.select()
+        self.attacks_spellcasting.insert(1.0, character['attacks_spellcasting'])
+        self.attack_one_name.insert(0, character['attacks']['one']['name'])
+        self.attack_one_atk_bonus.insert(0, character['attacks']['one']['atk_bonus'])
+        self.attack_one_type.insert(0, character['attacks']['one']['type'])
+        self.attack_two_name.insert(0, character['attacks']['two']['name'])
+        self.attack_two_atk_bonus.insert(0, character['attacks']['two']['atk_bonus'])
+        self.attack_two_type.insert(0, character['attacks']['two']['type'])
+        self.attack_three_name.insert(0, character['attacks']['three']['name'])
+        self.attack_three_atk_bonus.insert(0, character['attacks']['three']['atk_bonus'])
+        self.attack_three_type.insert(0, character['attacks']['three']['type'])
+        self.equipment.insert(1.0, character['equipment']['equipment'])
+        self.equipment_cp.insert(0, character['equipment']['cp'])
+        self.equipment_sp.insert(0, character['equipment']['sp'])
+        self.equipment_ep.insert(0, character['equipment']['ep'])
+        self.equipment_gp.insert(0, character['equipment']['gp'])
+        self.equipment_pp.insert(0, character['equipment']['pp'])
 
     def sidebar_button_create(self):
-        print("sidebar_button click")
+        self.canvas_list_frame.destroy()
+        self.spawn_create_widget()
 
     def sidebar_button_view(self):
-        print("sidebar_button click")
+        
+        # Convert dictionary to JSON string
+        data_to_send = json.dumps({
+            "event": "list"
+        })
+
+        self.socc.send(data_to_send.encode('utf-8'))
+        data = self.socc.recv(4096).decode('utf-8')
+
+        self.characters_list = json.loads(data)
+        
+        self.canvas_create_frame.destroy()
+        self.sidebar_button_3.destroy()
+        self.spawn_list_widget()
 
     def sidebar_button_save(self):
 
@@ -350,6 +465,7 @@ class App(customtkinter.CTk):
 
             "inspiration": self.inspiration.get(),
             "proficiency_bonus": self.proficiency_bonus.get(),
+            "damage_from_last_encounter": self.damage_from_last_encounter.get(),
 
             "armor_class": self.armor_class.get(),
             "initiative": self.initiative.get(),
@@ -414,7 +530,13 @@ class App(customtkinter.CTk):
             },
         }
 
-        print(character)
+        # Convert dictionary to JSON string
+        data_to_send = json.dumps({
+            "event": "create",
+            "data": character
+        })
+
+        self.socc.send(data_to_send.encode('utf-8'))
     
 
 
