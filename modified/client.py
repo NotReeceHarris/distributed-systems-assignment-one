@@ -1,11 +1,15 @@
 import socket, json, difflib
 
+# Server connection settings
 host = '127.0.0.1' # this is the server IP
 port = 5000 # this is the port on the server
 
+# Import required GUI libraries
 import tkinter
 import tkinter.messagebox
 import customtkinter
+
+# Configure the custom tkinter appearance
 customtkinter.set_appearance_mode("Light")  # Modes: "System" (standard), "Dark", "Light"
 customtkinter.set_default_color_theme("blue")  # Themes: "blue" (standard), "green", "dark-blue"
 
@@ -13,59 +17,68 @@ class App(customtkinter.CTk):
     def __init__(self):
         super().__init__()
 
-        self.socc = socket.socket() # create a new socket
-        self.socc.connect((host, port)) # create a socket with the server details
+        # Initialize socket connection to server
+        self.socc = socket.socket() 
+        self.socc.connect((host, port))
+        print("You are connected to the server.")
 
-        # configure window
+        # Configure main window properties
         self.title("Northwest D&D Guild and Traders association")
         self.geometry(f"{1180}x{580}")
 
-        # configure grid layout (4x4)
+        # Configure grid layout
         self.grid_columnconfigure(1, weight=1)
         self.grid_columnconfigure((2, 3), weight=0)
         self.grid_rowconfigure((0, 1, 2), weight=1)
 
-        # create sidebar frame with widgets
+        # Create and configure sidebar
         self.sidebar_frame = customtkinter.CTkFrame(self, width=140, corner_radius=0)
         self.sidebar_frame.grid(row=0, column=0, rowspan=4, sticky="nsew")
         self.sidebar_frame.grid_rowconfigure(4, weight=1)
         
+        # Add sidebar elements
         self.logo_label = customtkinter.CTkLabel(self.sidebar_frame, text="D&D", font=customtkinter.CTkFont(size=20, weight="bold"))
         self.logo_label.grid(row=0, column=0, padx=20, pady=(20, 10))
         
+        # Create navigation buttons
         self.sidebar_button_1 = customtkinter.CTkButton(self.sidebar_frame, text="Create", command=self.sidebar_button_create)
         self.sidebar_button_1.grid(row=1, column=0, padx=20, pady=10)
         
         self.sidebar_button_2 = customtkinter.CTkButton(self.sidebar_frame, text="Search", command=self.sidebar_button_view)
         self.sidebar_button_2.grid(row=2, column=0, padx=20, pady=10)
 
+        # Initialize the create character form
         self.spawn_create_widget()
 
     def spawn_create_widget(self):
 
+        print('creating character sheet form')
+
+        # Add save button to sidebar
         self.sidebar_button_3 = customtkinter.CTkButton(self.sidebar_frame, text="Save", command=self.sidebar_button_save)
         self.sidebar_button_3.grid(row=5, column=0, padx=20, pady=10)
 
-        # create canvas for background image with scrollbars
+        # Create scrollable canvas for character sheet
         self.canvas_create_frame = customtkinter.CTkFrame(self)
         self.canvas_create_frame.grid(row=0, column=1, rowspan=4, sticky="nsew")
 
         self.canvas = tkinter.Canvas(self.canvas_create_frame, width=960, height=580)
         self.canvas.pack(side=tkinter.LEFT, fill=tkinter.BOTH, expand=True)
 
+        # Add vertical scrollbar
         self.scrollbar_y = tkinter.Scrollbar(self.canvas_create_frame, orient=tkinter.VERTICAL, command=self.canvas.yview)
         self.scrollbar_y.pack(side=tkinter.RIGHT, fill=tkinter.Y)
 
         self.canvas.configure(yscrollcommand=self.scrollbar_y.set)
 
-        # load image
+        # Load and set background image
         self.bg_image = tkinter.PhotoImage(file="background.png")
         self.canvas.create_image(0, 0, anchor="nw", image=self.bg_image)
 
-        # configure scroll region
+        # Configure scroll region
         self.canvas.config(scrollregion=self.canvas.bbox(tkinter.ALL))
 
-        # =================================
+        # === Character Basic Information Fields ===
 
         # Damage from last encounter
         self.damage_from_last_encounter = customtkinter.CTkCheckBox(self)
@@ -304,35 +317,49 @@ class App(customtkinter.CTk):
         self.canvas.create_window(760, 685, width=30, window=self.death_saves_fail_three)
 
     def spawn_list_widget(self):
-        # create canvas for background image with scrollbars
+        """Creates and displays the character list view with search functionality"""
+
+        print('creating character list view')
+
+        # Create scrollable canvas for character list
         self.canvas_list_frame = customtkinter.CTkFrame(self)
         self.canvas_list_frame.grid(row=0, column=1, rowspan=4, sticky="nsew")
 
         self.canvas = tkinter.Canvas(self.canvas_list_frame, width=960, height=580)
         self.canvas.pack(side=tkinter.LEFT, fill=tkinter.BOTH, expand=True)
 
+        # Add scrollbar
         self.scrollbar_y = tkinter.Scrollbar(self.canvas_list_frame, orient=tkinter.VERTICAL, command=self.canvas.yview)
         self.scrollbar_y.pack(side=tkinter.RIGHT, fill=tkinter.Y)
 
         self.canvas.configure(yscrollcommand=self.scrollbar_y.set)
 
+        # Add search functionality
         self.search_input = customtkinter.CTkEntry(self.canvas_list_frame)
         self.canvas.create_window(200, 50, width=300, window=self.search_input)
 
         self.search_button = customtkinter.CTkButton(self.canvas_list_frame, text="Search", command=self.search_character)
         self.canvas.create_window(410, 50, width=100, window=self.search_button)
 
+        # Create dynamic list of character buttons
         self.dynamic_buttons = {}
 
         for i, character in enumerate(self.characters_list):
             slug = character['slug']
             label_text = f"{character['name']}{'' if not character['class_n_level'] else ', class:'} {character['class_n_level']}"
-            self.dynamic_buttons[slug] = customtkinter.CTkButton(self.canvas_list_frame, text="Load", command=lambda slug=slug: self.load_character(slug))
+            self.dynamic_buttons[slug] = customtkinter.CTkButton(
+                self.canvas_list_frame, 
+                text="Load", 
+                command=lambda slug=slug: self.load_character(slug)
+            )
             self.canvas.create_window(100, 125 + i * 40, height=30, width=100, window=self.dynamic_buttons[slug])
             self.canvas.create_text(170, 125 + i * 40, text=label_text, font=customtkinter.CTkFont(size=20), anchor="w")
 
     def search_character(self):
+        """Handles character search functionality using fuzzy matching"""
         search_query = self.search_input.get().lower()
+
+        print('searching for:', search_query)
 
         if not search_query:
             self.characters_list = self.characters_list_cache
@@ -340,18 +367,23 @@ class App(customtkinter.CTk):
             self.spawn_list_widget()
             return
         
-        filtered_characters = filtered_characters = [
+        # Use fuzzy matching to find characters
+        filtered_characters = [
             character for character in self.characters_list_cache
             if difflib.SequenceMatcher(None, search_query, character['name'].lower()).ratio() > 0.5
         ]
+
+        print(f'found {len(filtered_characters)} characters')
 
         self.characters_list = filtered_characters
         self.canvas_list_frame.destroy()
         self.spawn_list_widget()
 
     def load_character(self, slug):
-        print('requesting character:', slug)
+        """Loads a character from the server and populates the form"""
+        print(f'requesting character {slug} from server')
 
+        # Send request to server
         data_to_send = json.dumps({
             "event": "get",
             "slug": slug
@@ -360,10 +392,17 @@ class App(customtkinter.CTk):
         self.socc.send(data_to_send.encode('utf-8'))
         data = self.socc.recv(4096).decode('utf-8')
 
+        print('received character data from server')
+
         character = json.loads(data)
 
+        # Switch to character form view
         self.canvas_list_frame.destroy()
         self.spawn_create_widget()
+
+        # Populate all form fields with character data
+        # Note: This section contains extensive field population logic
+        # Each field is populated with corresponding data from the character object
 
         if character['damage_from_last_encounter'] == 1:
             self.damage_from_last_encounter.select()
@@ -433,12 +472,16 @@ class App(customtkinter.CTk):
         self.equipment_pp.insert(0, character['equipment']['pp'])
 
     def sidebar_button_create(self):
+        """Handles the create new character button click"""
         self.canvas_list_frame.destroy()
         self.spawn_create_widget()
 
     def sidebar_button_view(self):
+        """Handles the view characters button click"""
         
-        # Convert dictionary to JSON string
+        print('requesting character list from server')
+
+        # Request character list from server
         data_to_send = json.dumps({
             "event": "list"
         })
@@ -446,15 +489,22 @@ class App(customtkinter.CTk):
         self.socc.send(data_to_send.encode('utf-8'))
         data = self.socc.recv(4096).decode('utf-8')
 
+        print('received character list from server')
+
         self.characters_list = json.loads(data)
         self.characters_list_cache = self.characters_list
         
+        # Switch to list view
         self.canvas_create_frame.destroy()
         self.sidebar_button_3.destroy()
         self.spawn_list_widget()
 
     def sidebar_button_save(self):
+        """Handles saving character data to the server"""
 
+        print('saving character data')
+
+        # Collect all form data into a character dictionary
         character = {
             "character_name": self.character_name.get(),
             "class_n_level": self.class_n_level.get(),
@@ -463,53 +513,39 @@ class App(customtkinter.CTk):
             "race": self.race.get(),
             "alignment": self.alignment.get(),
             "xp": self.xp.get(),
-
             "strength": self.strength.get(),
             "strength_bonus": self.strength_bonus.get(),
-
             "dexterity": self.dexterity.get(),
             "dexterity_bonus": self.dexterity_bonus.get(),
-
             "constitution": self.constitution.get(),
             "constitution_bonus": self.constitution_bonus.get(),
-
             "intelligence": self.intelligence.get(),
             "intelligence_bonus": self.intelligence_bonus.get(),
-
             "wisdom": self.wisdom.get(),
             "wisdom_bonus": self.wisdom_bonus.get(),
-
             "charisma": self.charisma.get(),
             "charisma_bonus": self.charisma_bonus.get(),
-
             "passive_wisdom": self.passive_wisdom.get(),
             "proficiencies_languages": self.proficiencies_languages.get("1.0",'end-1c'),
-
             "inspiration": self.inspiration.get(),
             "proficiency_bonus": self.proficiency_bonus.get(),
             "damage_from_last_encounter": self.damage_from_last_encounter.get(),
-
             "armor_class": self.armor_class.get(),
             "initiative": self.initiative.get(),
             "speed": self.speed.get(),
-
             "personality_traits": self.personality_traits.get("1.0",'end-1c'),
             "ideals": self.ideals.get("1.0",'end-1c'),
             "bonds": self.bonds.get("1.0",'end-1c'),
             "flaws": self.flaws.get("1.0",'end-1c'),
-
             "features_traits": self.features_traits.get("1.0",'end-1c'),
-
             "hit_points": {
                 "current": self.current_hit_points.get("1.0",'end-1c'),
                 "max": self.max_hit_points.get()
             },
-
             "dice": {
                 "hit_dice": self.hit_dice.get("1.0",'end-1c'),
                 "hit_dice_total": self.hit_dice_total.get()
             },
-
             "death_saves": {
                 "success": {
                     "one": self.death_saves_success_one.get(),
@@ -522,7 +558,6 @@ class App(customtkinter.CTk):
                     "three": self.death_saves_fail_three.get()
                 }
             },
-
             "attacks_spellcasting": self.attacks_spellcasting.get("1.0",'end-1c'),
             "attacks": {
                 "one": {
@@ -541,7 +576,6 @@ class App(customtkinter.CTk):
                     "type": self.attack_three_type.get()
                 }
             },
-
             "equipment": {
                 "equipment": self.equipment.get("1.0",'end-1c'),
                 "cp": self.equipment_cp.get(),
@@ -552,24 +586,29 @@ class App(customtkinter.CTk):
             },
         }
 
-        # Convert dictionary to JSON string
+        print('sending character data to server')
+
+        # Send character data to server
         data_to_send = json.dumps({
             "event": "create",
             "data": character
         })
 
         self.socc.send(data_to_send.encode('utf-8'))
+        print('sent character data to server')
         data = self.socc.recv(1024).decode('utf-8')
 
         parsed_data = json.loads(data)
 
+        # Show appropriate message based on save result
         if parsed_data['status'] == 'success':
+            print('character saved successfully')
             tkinter.messagebox.showinfo("Save", "Character saved successfully")
         else:
+            print('failed to save character')
             tkinter.messagebox.showerror("Save", "Failed to save character")
-    
 
-
+# Application entry point
 if __name__ == "__main__":
     app = App()
     app.mainloop()

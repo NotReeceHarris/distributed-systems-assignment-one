@@ -1,0 +1,80 @@
+{
+    "character_name": "Frosty Balls",
+    "class_n_level": "",
+    "background": "",
+    "player_name": "",
+    "race": "",
+    "alignment": "",
+    "xp": "",
+    "strength": "",
+    "strength_bonus": "",
+    "dexterity": "",
+    "dexterity_bonus": "",
+    "constitution": "",
+    "constitution_bonus": "",
+    "intelligence": "",
+    "intelligence_bonus": "",
+    "wisdom": "",
+    "wisdom_bonus": "",
+    "charisma": "",
+    "charisma_bonus": "",
+    "passive_wisdom": "",
+    "proficiencies_languages": "",
+    "inspiration": "",
+    "proficiency_bonus": "",
+    "damage_from_last_encounter": 0,
+    "armor_class": "",
+    "initiative": "",
+    "speed": "",
+    "personality_traits": "",
+    "ideals": "",
+    "bonds": "",
+    "flaws": "",
+    "features_traits": "",
+    "hit_points": {
+        "current": "",
+        "max": ""
+    },
+    "dice": {
+        "hit_dice": "",
+        "hit_dice_total": ""
+    },
+    "death_saves": {
+        "success": {
+            "one": 0,
+            "two": 0,
+            "three": 0
+        },
+        "fail": {
+            "one": 0,
+            "two": 0,
+            "three": 0
+        }
+    },
+    "attacks_spellcasting": "",
+    "attacks": {
+        "one": {
+            "name": "",
+            "atk_bonus": "",
+            "type": ""
+        },
+        "two": {
+            "name": "",
+            "atk_bonus": "",
+            "type": ""
+        },
+        "three": {
+            "name": "",
+            "atk_bonus": "",
+            "type": ""
+        }
+    },
+    "equipment": {
+        "equipment": "",
+        "cp": "",
+        "sp": "",
+        "ep": "",
+        "gp": "",
+        "pp": ""
+    }
+}

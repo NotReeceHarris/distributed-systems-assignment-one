@@ -164,27 +164,32 @@ if __name__ == "__main__":
 
                         # Handle character creation
                         if parsedData['event'] == 'create':
+                            print("Creating character")
                             if validate_data(parsedData['data']):
+                                print("Character data is valid")
                                 # Create slug from character name
                                 slug = parsedData['data']['character_name'].lower().replace(" ", "-")
                                 
                                 # Store character in memory and save to file
                                 CHARACTERS[slug] = parsedData['data']
                                 with open(f'saves/{slug}.json', "w") as file:
+                                    print(f"Saving character to saves/{slug}.json")
                                     json.dump(parsedData['data'], file, indent=4)
 
                                 sock.send(json.dumps({
                                     'status': 'success',
                                     'slug': slug
                                 }).encode('utf-8'))
+                                print("Character created successfully sending confirmation to client")
                             else:
                                 sock.send(json.dumps({
                                     'status': 'failed'
                                 }).encode('utf-8'))
+                                print("Character data is invalid, sending failure to client")
                         
                         # Handle character list request
                         if parsedData['event'] == 'list':
-                            print("Sending list of characters")
+                            print("Sending list of characters to client")
                             # Create simplified character list with basic info
                             parsedList = []
                             for key in CHARACTERS:
@@ -197,15 +202,18 @@ if __name__ == "__main__":
                                     'xp': CHARACTERS[key]['xp']
                                 })
                             sock.send(json.dumps(parsedList).encode('utf-8'))
+                            print("Sent list of characters to client")
 
                         # Handle single character data request
                         if parsedData['event'] == 'get':
-                            print("Sending character data")
+                            print("Sending character data to client")
                             slug = parsedData['slug']
                             if slug in CHARACTERS:
                                 sock.send(json.dumps(CHARACTERS[slug]).encode('utf-8'))
+                                print("Sent character data to client")
                             else:
                                 sock.send(json.dumps({}).encode('utf-8'))
+                                print("Character not found, sending empty data to client")
 
                     except Exception as e:
                         # Handle client disconnection or errors
