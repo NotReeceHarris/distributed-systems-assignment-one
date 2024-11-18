@@ -1,3 +1,0 @@
-msgpack
-asyncio
-websockets
