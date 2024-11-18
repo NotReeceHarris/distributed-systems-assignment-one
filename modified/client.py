@@ -1,4 +1,4 @@
-import socket, json
+import socket, json, difflib
 
 host = '127.0.0.1' # this is the server IP
 port = 5000 # this is the port on the server
@@ -8,7 +8,6 @@ import tkinter.messagebox
 import customtkinter
 customtkinter.set_appearance_mode("Light")  # Modes: "System" (standard), "Dark", "Light"
 customtkinter.set_default_color_theme("blue")  # Themes: "blue" (standard), "green", "dark-blue"
-
 
 class App(customtkinter.CTk):
     def __init__(self):
@@ -37,7 +36,7 @@ class App(customtkinter.CTk):
         self.sidebar_button_1 = customtkinter.CTkButton(self.sidebar_frame, text="Create", command=self.sidebar_button_create)
         self.sidebar_button_1.grid(row=1, column=0, padx=20, pady=10)
         
-        self.sidebar_button_2 = customtkinter.CTkButton(self.sidebar_frame, text="Search & Load", command=self.sidebar_button_view)
+        self.sidebar_button_2 = customtkinter.CTkButton(self.sidebar_frame, text="Search", command=self.sidebar_button_view)
         self.sidebar_button_2.grid(row=2, column=0, padx=20, pady=10)
 
         self.spawn_create_widget()
@@ -45,7 +44,7 @@ class App(customtkinter.CTk):
     def spawn_create_widget(self):
 
         self.sidebar_button_3 = customtkinter.CTkButton(self.sidebar_frame, text="Save", command=self.sidebar_button_save)
-        self.sidebar_button_3.grid(row=3, column=0, padx=20, pady=10)
+        self.sidebar_button_3.grid(row=5, column=0, padx=20, pady=10)
 
         # create canvas for background image with scrollbars
         self.canvas_create_frame = customtkinter.CTkFrame(self)
@@ -65,7 +64,6 @@ class App(customtkinter.CTk):
 
         # configure scroll region
         self.canvas.config(scrollregion=self.canvas.bbox(tkinter.ALL))
-
 
         # =================================
 
@@ -318,15 +316,32 @@ class App(customtkinter.CTk):
 
         self.canvas.configure(yscrollcommand=self.scrollbar_y.set)
 
+        self.search_input = customtkinter.CTkEntry(self.canvas_list_frame)
+        self.canvas.create_window(200, 50, width=300, window=self.search_input)
+
+        self.search_button = customtkinter.CTkButton(self.canvas_list_frame, text="Search", command=self.search_character)
+        self.canvas.create_window(410, 50, width=100, window=self.search_button)
+
         self.dynamic_buttons = {}
 
         for i, character in enumerate(self.characters_list):
             slug = character['slug']
-            label_text = f"{character['name']} {'' if not character['class_n_level'] else 'a'} {character['class_n_level']}"
-            self.dynamic_buttons[slug] = customtkinter.CTkButton(self.canvas_list_frame, text="view", command=lambda slug=slug: self.load_character(slug))
-            self.canvas.create_window(100, 100 + i * 50, height=30, width=100, window=self.dynamic_buttons[slug])
-            self.canvas.create_text(170, 100 + i * 50, text=label_text, font=customtkinter.CTkFont(size=20), anchor="w")
+            label_text = f"{character['name']}{'' if not character['class_n_level'] else ', class:'} {character['class_n_level']}"
+            self.dynamic_buttons[slug] = customtkinter.CTkButton(self.canvas_list_frame, text="Load", command=lambda slug=slug: self.load_character(slug))
+            self.canvas.create_window(100, 125 + i * 40, height=30, width=100, window=self.dynamic_buttons[slug])
+            self.canvas.create_text(170, 125 + i * 40, text=label_text, font=customtkinter.CTkFont(size=20), anchor="w")
 
+    def search_character(self):
+        search_query = self.search_input.get().lower()
+
+        filtered_characters = filtered_characters = [
+            character for character in self.characters_list
+            if difflib.SequenceMatcher(None, search_query, character['name'].lower()).ratio() > 0.5
+        ]
+
+        self.characters_list = filtered_characters
+        self.canvas_list_frame.destroy()
+        self.spawn_list_widget()
 
     def load_character(self, slug):
         print('requesting character:', slug)
@@ -537,6 +552,14 @@ class App(customtkinter.CTk):
         })
 
         self.socc.send(data_to_send.encode('utf-8'))
+        data = self.socc.recv(1024).decode('utf-8')
+
+        parsed_data = json.loads(data)
+
+        if parsed_data['status'] == 'success':
+            tkinter.messagebox.showinfo("Save", "Character saved successfully")
+        else:
+            tkinter.messagebox.showerror("Save", "Failed to save character")
     
 
 

@@ -73,6 +73,10 @@ def validate_data(data):
                     print(f"Missing keys in {key}.{subkey}: {missing_subsubkeys}")
                     return False
 
+    if not data["character_name"]:
+        print("Character name cannot be empty")
+        return False
+
     print("Validation successful")
     return True
 
@@ -137,6 +141,15 @@ if __name__ == "__main__":
 
                                 with open(f'saves/{slug}.json', "w") as file:
                                     json.dump(parsedData['data'], file, indent=4)
+
+                                sock.send(json.dumps({
+                                    'status': 'success',
+                                    'slug': slug
+                                }).encode('utf-8'))
+                            else:
+                                sock.send(json.dumps({
+                                    'status': 'failed'
+                                }).encode('utf-8'))
                         
                         if parsedData['event'] == 'list':
                             print("Sending list of characters")
@@ -147,7 +160,10 @@ if __name__ == "__main__":
                                 parsedList.append({
                                     'slug': key,
                                     'name': CHARACTERS[key]['character_name'],
-                                    'class_n_level': CHARACTERS[key]['class_n_level']
+                                    'class_n_level': CHARACTERS[key]['class_n_level'],
+                                    'background': CHARACTERS[key]['background'],
+                                    'race': CHARACTERS[key]['race'],
+                                    'xp': CHARACTERS[key]['xp']
                                 })
 
                             sock.send(json.dumps(parsedList).encode('utf-8'))
