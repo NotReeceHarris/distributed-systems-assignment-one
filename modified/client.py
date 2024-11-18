@@ -334,8 +334,14 @@ class App(customtkinter.CTk):
     def search_character(self):
         search_query = self.search_input.get().lower()
 
+        if not search_query:
+            self.characters_list = self.characters_list_cache
+            self.canvas_list_frame.destroy()
+            self.spawn_list_widget()
+            return
+        
         filtered_characters = filtered_characters = [
-            character for character in self.characters_list
+            character for character in self.characters_list_cache
             if difflib.SequenceMatcher(None, search_query, character['name'].lower()).ratio() > 0.5
         ]
 
@@ -441,6 +447,7 @@ class App(customtkinter.CTk):
         data = self.socc.recv(4096).decode('utf-8')
 
         self.characters_list = json.loads(data)
+        self.characters_list_cache = self.characters_list
         
         self.canvas_create_frame.destroy()
         self.sidebar_button_3.destroy()
