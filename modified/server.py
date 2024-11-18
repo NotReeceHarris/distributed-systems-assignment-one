@@ -3,21 +3,45 @@ import select
 import json
 import os
 
+# Global counter for client IDs
 ID = 1
+# Dictionary to store character data, with character slugs as keys
 CHARACTERS = {}
 
-# Function to broadcast chat messages to all connected clients
 def broadcast_data(sock, message):
+    """
+    Broadcasts a message to all connected clients except the sender and server
+    
+    Args:
+        sock: The sender's socket
+        message: The message to broadcast
+    """
     for client_socket in CONNECTION_LIST:
         if client_socket != server_socket and client_socket != sock:
             try:
                 client_socket.send(message.encode('utf-8'))
             except: 
+                # If sending fails, remove the client from connection list
                 client_socket.close()
                 CONNECTION_LIST.remove(client_socket)
 
-# "Error checking and Validation (4 marks)"
 def validate_data(data):
+    """
+    Validates the D&D character data structure
+    
+    Performs thorough validation of character data including:
+    - Required top-level attributes
+    - Nested required attributes for hit points, dice, death saves, etc.
+    - Data type checking for nested structures
+    - Character name validation
+    
+    Args:
+        data: Dictionary containing character data
+        
+    Returns:
+        bool: True if data is valid, False otherwise
+    """
+    # Define required top-level keys for character data
     required_keys = {
         "character_name", "class_n_level", "background", "player_name", "race", 
         "alignment", "xp", "strength", "strength_bonus", "dexterity", "dexterity_bonus",
@@ -29,7 +53,7 @@ def validate_data(data):
         "attacks_spellcasting"
     }
 
-    # Nested required keys
+    # Define required nested structure with their respective required keys
     nested_keys = {
         "hit_points": {"current", "max"},
         "dice": {"hit_dice", "hit_dice_total"},
@@ -45,19 +69,19 @@ def validate_data(data):
         "equipment": {"equipment", "cp", "sp", "ep", "gp", "pp"}
     }
 
-    # Check required top-level keys
+    # Validate top-level keys
     missing_keys = required_keys - data.keys()
     if missing_keys:
         print(f"Missing top-level keys: {missing_keys}")
         return False
 
-    # Check nested keys
+    # Validate nested structure
     for key, subkeys in nested_keys.items():
         if key not in data or not isinstance(data[key], dict):
             print(f"Missing or invalid nested structure: {key}")
             return False
         
-        # Recursively validate further nested dictionaries
+        # Handle nested dictionaries recursively
         if isinstance(subkeys, set):
             missing_subkeys = subkeys - data[key].keys()
             if missing_subkeys:
@@ -73,6 +97,7 @@ def validate_data(data):
                     print(f"Missing keys in {key}.{subkey}: {missing_subsubkeys}")
                     return False
 
+    # Validate character name is not empty
     if not data["character_name"]:
         print("Character name cannot be empty")
         return False
@@ -81,14 +106,16 @@ def validate_data(data):
     return True
 
 def load_characters():
+    """
+    Loads all saved character data from JSON files in the 'saves' directory
+    Each character file should be named with the character's slug and .json extension
+    """
     if os.path.exists('saves'):
-        # Iterate over all files in the directory
         for file_name in os.listdir('saves'):
-            if file_name.endswith(".json"):  # Check if it's a JSON file
-                key = file_name[:-5]  # Remove the '.json' extension
+            if file_name.endswith(".json"):
+                key = file_name[:-5]  # Remove .json extension
                 file_path = os.path.join('saves', file_name)
                 
-                # Read the JSON file and append to the dictionary
                 with open(file_path, "r") as file:
                     CHARACTERS[key] = json.load(file)
     else:
@@ -97,30 +124,33 @@ def load_characters():
     print(f'Loaded {len(CHARACTERS)} character(s).')
 
 if __name__ == "__main__":
-    CONNECTION_LIST = []
-    RECV_BUFFER = 4096
-    PORT = 5000
+    # Initialize server settings
+    CONNECTION_LIST = []  # List of socket clients
+    RECV_BUFFER = 4096   # Socket receive buffer size
+    PORT = 5000          # Server port number
 
-    # Create the 'saves' directory if it doesn't exist
+    # Ensure saves directory exists
     os.makedirs(os.path.dirname('saves/'), exist_ok=True)
     load_characters()
 
+    # Initialize server socket
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server_socket.bind(("0.0.0.0", PORT))
-    server_socket.setblocking(0)
-    server_socket.listen(10)
+    server_socket.setblocking(0)  # Set non-blocking mode
+    server_socket.listen(10)      # Allow up to 10 pending connections
 
     CONNECTION_LIST.append(server_socket)
     print("Chat server started on port " + str(PORT))
 
     try:
         while True:
-
+            # Use select to handle multiple clients
             read_sockets, _, _ = select.select(CONNECTION_LIST, [], [])
 
             for sock in read_sockets:
                 if sock == server_socket:
+                    # Handle new connection
                     sockfd, addr = server_socket.accept()
                     CONNECTION_LIST.append(sockfd)
                     print("Client (%s, %s) is online" % addr)
@@ -128,17 +158,18 @@ if __name__ == "__main__":
                     ID += 1
                 else:
                     try:
+                        # Handle client messages
                         data = sock.recv(RECV_BUFFER).decode('utf-8')
                         parsedData = json.loads(data)
 
+                        # Handle character creation
                         if parsedData['event'] == 'create':
-
                             if validate_data(parsedData['data']):
-
+                                # Create slug from character name
                                 slug = parsedData['data']['character_name'].lower().replace(" ", "-")
-
+                                
+                                # Store character in memory and save to file
                                 CHARACTERS[slug] = parsedData['data']
-
                                 with open(f'saves/{slug}.json', "w") as file:
                                     json.dump(parsedData['data'], file, indent=4)
 
@@ -151,11 +182,11 @@ if __name__ == "__main__":
                                     'status': 'failed'
                                 }).encode('utf-8'))
                         
+                        # Handle character list request
                         if parsedData['event'] == 'list':
                             print("Sending list of characters")
-
+                            # Create simplified character list with basic info
                             parsedList = []
-
                             for key in CHARACTERS:
                                 parsedList.append({
                                     'slug': key,
@@ -165,20 +196,19 @@ if __name__ == "__main__":
                                     'race': CHARACTERS[key]['race'],
                                     'xp': CHARACTERS[key]['xp']
                                 })
-
                             sock.send(json.dumps(parsedList).encode('utf-8'))
 
+                        # Handle single character data request
                         if parsedData['event'] == 'get':
                             print("Sending character data")
-
                             slug = parsedData['slug']
-
                             if slug in CHARACTERS:
                                 sock.send(json.dumps(CHARACTERS[slug]).encode('utf-8'))
                             else:
                                 sock.send(json.dumps({}).encode('utf-8'))
 
                     except Exception as e:
+                        # Handle client disconnection or errors
                         print(e)
                         addr = sock.getpeername()
                         broadcast_data(sock, "Client (%s, %s) is offline" % addr)
